@@ -65,7 +65,59 @@ $summaryItems = [
     1500,
 ];
 
-$sql = "SELECT * FROM cards";
+/*Необходимо выгрузить данные по неделям за ноябрь в таблицу Excel:
+
+1лист: Номер карты, Кол-во заправок, Средний чек, Вид топлива ( период с 01.11-08.11)
+2лист: Номер карты, Кол-во заправок, Средний чек, Вид топлива (Период 09.11-15.11)
+3 лист:  Номер карты, Кол-во заправок, Средний чек, Вид топлива ( период 16.11-22.11)
+4 лист :  Номер карты, Кол-во заправок, Средний чек, Вид топлива ( период 23.11-30.11)
+
+
+Брать чеки только на суммы от 299-600 рублей по топливу.
+Список артикулов:
+
+ДТ-З-К5,
+ДТ-З-К5 GT
+АИ-98-К5
+АИ-95-К5
+АИ-95-К5
+АИ-95-К5 GT
+АИ-92-К5
+АИ-92-К5
+023451
+019356
+СУГ
+АИ-92 GT*/
+
+$sql = "
+SELECT cards.uid, count(orders.id) as counts, round(AVG(orders.summary), 2) as avgsum, group_concat(DISTINCT goods.article separator ', ')
+FROM cards
+  inner JOIN profiles ON profiles.id = cards.profile_id
+  inner JOIN orders ON cards.id = orders.card_id
+  inner JOIN goods_incomes ON orders.id = goods_incomes.order_id
+  inner JOIN goods ON goods_incomes.goods_id = goods.id
+WHERE cards.client_id = 625
+      AND goods.article IN (
+  'ДТ-З-К5',
+  'ДТ-З-К5 GT',
+  'АИ-98-К5',
+  'АИ-95-К5',
+  'АИ-95-К5',
+  'АИ-95-К5 GT',
+  'АИ-95-К5 GT',
+  'АИ-92-К5',
+  'АИ-92-К5',
+  '023451',
+  '019356',
+  'СУГ',
+  'АИ-92 GT'
+)
+      AND orders.summary >= 299
+      AND orders.summary <= 600
+      AND orders.from >= '2020-11-23'
+      AND orders.from <= '2020-11-30 23:59:59'
+group by cards.id;
+";
 
 $orders = ORM::forTable("cards")
     ->rawQuery($sql)

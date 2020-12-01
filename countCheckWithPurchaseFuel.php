@@ -12,8 +12,25 @@ require_once DOCROOT . '/vendor/autoload.php';
 require_once SYSPATH . 'Autoloader.php';
 Autoloader::register();
 
-//Чтение конфигурационного файла
-require_once INCLUDESPATH . 'config_local.php';
+// skbonus.ru
+/*define("CONFIG_MYSQL", [
+    "host"        => "rc1a-43bu904s7cn0e1kl.mdb.yandexcloud.net",
+    "password"    => "shah5Aifae9iZooxaighoh7g",
+    "user"        => "user_loyalty_main",
+    "database"    => "database_loyalty_main",
+    "with_cert"   => true,
+    "certificate" => DOCROOT . "/upload/certs/yandex_database.crt",
+]);*/
+
+// локальный конфиг
+define("CONFIG_MYSQL", [
+    "host"        => "localhost",
+    "database"    => "skbonus_main",
+    "user"        => "root",
+    "password"    => "",
+    "with_cert"   => false,
+    "certificate" => null,
+]);
 
 //Настройка переменных окружения PHP
 @ini_set('magic_quotes_gpc', 0);
