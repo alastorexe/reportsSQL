@@ -329,3 +329,52 @@ WHERE cards.client_id = 625
 GROUP BY cards.id
 HAVING max_date <= '2020-10-31 23:59:59'
 
+
+
+/*
+По приведенным ниже артикулам, необходимо выгрузить кол-во купленных чашек всего за период с 14.12-20.12
+
+017811
+017812
+017813
+017814
+015912
+016163
+016172
+016074
+021662
+
+
+Саша, по этим данным нужно выгрузить 51 неделю в понедельник.
+*/
+
+
+SELECT
+  cup.article,
+  count(cup.id)
+FROM cards
+  INNER JOIN (
+               SELECT
+                 orders.*,
+                 goods.article
+               FROM orders
+                 INNER JOIN goods_incomes ON orders.id = goods_incomes.order_id
+                 INNER JOIN goods ON goods.id = goods_incomes.goods_id
+               WHERE orders.client_id = 625
+                     AND orders.from >= '2020-12-21'
+                     AND orders.from <= '2020-12-27 23:59:59'
+                     AND goods.article IN (
+                 '017811',
+                 '017812',
+                 '017813',
+                 '017814',
+                 '015912',
+                 '016163',
+                 '016172',
+                 '016074',
+                 '021662'
+               )
+             ) AS cup ON cup.card_id = cards.id
+WHERE cards.client_id = 625
+GROUP BY cup.article;
+
