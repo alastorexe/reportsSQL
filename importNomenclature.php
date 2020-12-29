@@ -529,11 +529,17 @@ if (false) {
     }
 }
 
+$clientID = 4;
+$fileXML = "fileXML.xml";
+
 $xml = new XMLReader();
 $xml->open($fileXML);
 
 $tag = "Объект";
 //$tag = "ПравилаОбмена";
+
+$categories = [];
+$goods = [];
 
 while ($xml->read() && $xml->name != $tag) {
     ;
@@ -573,8 +579,6 @@ while ($xml->name == $tag) {
                      Cвойство[2] - Принадлежность какой-то группе (-)
                 [10] - Автоматическая скидка?? (Число) (-)
                 [11] - Cхема скидок?? (Число) (-)
-
-        В них нет цены.
         */
 
         // Ссылка на товар
@@ -616,7 +620,7 @@ while ($xml->name == $tag) {
             }
         }
 
-    /*    print_r($goodUID);
+        /*print_r($goodUID);
         echo "\n";
         print_r($goodCode);
         echo "\n";
@@ -635,20 +639,57 @@ while ($xml->name == $tag) {
         print_r($categoryParent);
         echo "\n";*/
 
+        $goodsCategory = ORM::forTable("goods_categories")
+            ->where([
+                "client_id" => $clientID,
+                "uid"       => $categoryUID,
+            ])->findOne();
+        if (empty($goodsCategory)) {
+            $category = [
+                "client_id"    => $clientID,
+                "name"         => $categoryName,
+                "parent"       => $categoryParent,
+                "uid"          => $categoryUID,
+                "is_activated" => 1,
+                "parent_uid"   => $categoryParentUID,
+            ];
+            $categories[] = $category;
+        }
 
-        $goodsCategory = ORM::forTable("goods_categories")->create();
-        $goodsCategory->set([
-            "client_id" => $clientID,
-            "name" => $categoryName,
-            "parent" => $categoryParent,
-            "description" => "Категория " . $categoryName,
-            "uid" => $categoryUID,
+        // uid = uid_1c
+        $good = [
+            "client_id"    => $clientID,
+            "code"         => $goodCode,
+            "name"         => $goodName,
+            "article"      => $goodArticle,
+            "price"        => 0,
+            "description"  => $goodDescription,
+            "price_out"    => 0,
+            "uid"          => $goodUID,
             "is_activated" => 1,
-            "parent_uid" => $categoryParentUID
-        ]);
-        $goodsCategory->save();
-        if(empty($goodsCategory)) {
-            throw new OrlanException("Ошибка сохранения категории товара");
+        ];
+        $goods[] = $good;
+
+        /*$goodsCategory = ORM::forTable("goods_categories")
+            ->where([
+                "client_id" => $clientID,
+                "uid"   => $categoryUID,
+            ])->findOne();
+        if (empty($goodsCategory)) {
+            $goodsCategory = ORM::forTable("goods_categories")->create();
+            $goodsCategory->set([
+                "client_id" => $clientID,
+                "name" => $categoryName,
+                "parent" => $categoryParent,
+                "description" => "Категория " . $categoryName,
+                "uid" => $categoryUID,
+                "is_activated" => 1,
+                "parent_uid" => $categoryParentUID
+            ]);
+            $goodsCategory->save();
+            if(empty($goodsCategory)) {
+                throw new OrlanException("Ошибка сохранения категории товара");
+            }
         }
 
         $good = ORM::forTable("goods")->create();
@@ -660,19 +701,27 @@ while ($xml->name == $tag) {
             "article"   => $goodArticle,
             "price"   => 0,
             "description"   => $goodDescription,
-            "price_out"   => 0
+            "price_out"   => 0,
+            "is_activated" => 1
         ]);
         $good->save();
         if (empty($good)) {
             throw new OrlanException("Ошибка сохранения товара");
-        }
-
-        exit();
+        }*/
     }
 
     $xml->next($tag);
     unset($element);
 }
 
+$data = [
+    "categories" => $categories,
+    "goods"      => $goods,
+];
+
+$synchronization = new Synchronization($clientID, $data);
+$synchronization->nomenclature();
+
 $xml->close();
+
 
