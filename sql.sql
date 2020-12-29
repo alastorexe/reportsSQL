@@ -592,5 +592,37 @@ WHERE cards.client_id = 625
       AND goods_incomes.bonus_add > 0
 GROUP BY orders.id;
 
+/*
+Необходимо выгрузить в таблицу excel клиентов, которые зарегистрировались с 7.10 -29.12:
+
+1) Регион (название группы магазинов)
+2) Магазин
+3)ФИО
+4)Номер телефона
+5) Дата регистрации.
+
+Регион можно посмотреть в структуре личного кабинета ( Отчеты-->Продажи-->Структура). Пример выгрузки во вложении
+*/
+
+SELECT
+  shops.name as shopName,
+  profiles.name,
+  profiles.phone,
+  shops.id as shopID,
+  hpc.created_at
+FROM cards
+  LEFT OUTER JOIN orders ON orders.card_id = cards.id
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+  INNER JOIN shops ON orders.shop_id = shops.id
+  LEFT OUTER JOIN (
+                    SELECT *
+                    FROM history_profiles_change
+                    WHERE client_id = 888
+                          AND is_creation = TRUE
+                  ) AS hpc ON hpc.profile_id = profiles.id
+WHERE cards.client_id = 888
+  and hpc.created_at >= '2020-10-07'
+  and hpc.created_at <= '2020-12-29 23:59:59'
+GROUP BY cards.id;
 
 
