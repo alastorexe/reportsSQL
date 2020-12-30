@@ -529,8 +529,13 @@ if (false) {
     }
 }
 
-$clientID = 4;
+$clientID = 780;
 $fileXML = "fileXML.xml";
+
+$goodsCategory = ORM::forTable("goods_categories")
+    ->where([
+        "client_id" => $clientID,
+    ])->findArray();
 
 $xml = new XMLReader();
 $xml->open($fileXML);
@@ -539,6 +544,9 @@ $tag = "Объект";
 //$tag = "ПравилаОбмена";
 
 $categories = [];
+
+$categories = $goodsCategory;
+
 $goods = [];
 
 while ($xml->read() && $xml->name != $tag) {
@@ -601,17 +609,14 @@ while ($xml->name == $tag) {
                     $categoryName = $property->Ссылка->Свойство[1]->Значение ?? '';
                 }
                     break;
-
                 case "Наименование" : {
                     $goodName = $property->Значение ?? '';
                 }
                     break;
-
                 case "Описание" : {
                     $goodDescription = $property->Значение ?? '';
                 }
                     break;
-
                 case "Родитель" : {
                     $categoryParentUID = $property->Ссылка->Свойство[0]->Значение ?? '';
                     $categoryParent = $property->Ссылка->Свойство[1]->Значение ?? 0;
@@ -620,31 +625,25 @@ while ($xml->name == $tag) {
             }
         }
 
-        /*print_r($goodUID);
-        echo "\n";
-        print_r($goodCode);
-        echo "\n";
-        print_r($goodArticle);
-        echo "\n";
-        print_r($goodName);
-        echo "\n";
-        print_r($goodDescription);
-        echo "\n";
-        print_r($categoryUID);
-        echo "\n";
-        print_r($categoryName);
-        echo "\n";
-        print_r($categoryParentUID);
-        echo "\n";
-        print_r($categoryParent);
-        echo "\n";*/
+        $categoryUID = strval($categoryUID);
+        $categoryName = strval($categoryName);
+        $categoryParent = intval($categoryParent);
+        $categoryParentUID = strval($categoryParentUID);
+        $goodName = strval($goodName);
+        $goodArticle = strval($goodArticle);
+        $goodDescription = strval($goodDescription);
+        $goodCode = strval($goodCode);
+        $goodUID = strval($goodUID);
 
-        $goodsCategory = ORM::forTable("goods_categories")
-            ->where([
-                "client_id" => $clientID,
-                "uid"       => $categoryUID,
-            ])->findOne();
-        if (empty($goodsCategory)) {
+        $flag = true;
+
+        foreach ($categories as $category) {
+            if ($category["uid"] == $categoryUID) {
+                $flag = false;
+            }
+        }
+
+        if ($flag) {
             $category = [
                 "client_id"    => $clientID,
                 "name"         => $categoryName,
@@ -652,6 +651,7 @@ while ($xml->name == $tag) {
                 "uid"          => $categoryUID,
                 "is_activated" => 1,
                 "parent_uid"   => $categoryParentUID,
+                "goods"        => [],
             ];
             $categories[] = $category;
         }
@@ -667,8 +667,18 @@ while ($xml->name == $tag) {
             "price_out"    => 0,
             "uid"          => $goodUID,
             "is_activated" => 1,
+            "category_uid" => $categoryUID,
         ];
-        $goods[] = $good;
+        if (empty($categoryUID)) {
+            $goods["root"] = $good;
+        } else {
+            $goods[$categoryUID][] = $good;
+        }
+
+        /* $category["goods"] = $goods[$categoryUID];
+         print_r($category);
+         print_r($goods[$categoryUID]);
+         exit();*/
 
         /*$goodsCategory = ORM::forTable("goods_categories")
             ->where([
@@ -702,6 +712,7 @@ while ($xml->name == $tag) {
             "price"   => 0,
             "description"   => $goodDescription,
             "price_out"   => 0,
+            "uid_1c"      => $goodUID,
             "is_activated" => 1
         ]);
         $good->save();
@@ -714,14 +725,29 @@ while ($xml->name == $tag) {
     unset($element);
 }
 
+$xml->close();
+
+/*foreach ($categories as &$category) {
+    if (!empty($goods[$category["uid"]])) {
+        $category["goods"] = $goods[$category["uid"]];
+        unset($goods[$category["uid"]]);
+    }
+}*/
+
+// построить дерево категорий
+$treeCategories = buildTree($categories);
+//$treeCategories = makeTree($categories);
+//$treeCategories = createTree($categories);
+
+print_r($treeCategories);
+exit();
+
 $data = [
-    "categories" => $categories,
-    "goods"      => $goods,
+    "categories" => $treeCategories,
+    "goods"      => $goods["root"] ?? [],
 ];
 
 $synchronization = new Synchronization($clientID, $data);
 $synchronization->nomenclature();
-
-$xml->close();
 
 
