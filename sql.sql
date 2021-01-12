@@ -626,3 +626,591 @@ WHERE cards.client_id = 888
 GROUP BY cards.id;
 
 
+SELECT *
+FROM cards
+WHERE cards.client_id = 888
+      AND cards.uid = '79171332415';
+
+/*
+Привязкать телефон к личному кабинету
+*
+
+select * from goods
+where goods.client_id = 1004;
+
+*/
+
+/*
+Декорадо 780
+ */
+
+SELECT *
+FROM goods
+WHERE goods.client_id = 780;
+
+SELECT *
+FROM goods_categories
+WHERE client_id = 780;
+
+/*3735*/
+
+SELECT *
+FROM bills
+WHERE id = 3735;
+
+UPDATE bills
+SET bills.exported = 1
+WHERE bills.id = 3735;
+
+
+/*
+У АЗС есть списки клиентов "Monopoly", "Monopoly2", 1ДТ_РОЗНИЦА".
+
+С 26.11 у данных клиентов наложились программы лояльности ( действовала и скидочная и бонусная система" .
+
+Вопрос: Можно у этих  клиентов с 26.11-25.12 списать все начисленные бонусы за этот период?
+*/
+
+/*
+1616
+1669
+1661
+*/
+
+SELECT *
+FROM buyer_lists
+WHERE client_id = 625
+      AND name = '1ДТ_РОЗНИЦА';
+
+SELECT buyers_list.buyers
+FROM buyers_list
+WHERE buyer_list_id = 1661;
+
+SELECT cards.id
+FROM cards
+  INNER JOIN profiles ON cards.id = profiles.card_id
+WHERE cards.client_id = 625
+      AND profile_id IN (123);
+
+
+UPDATE balance_movements
+SET balance_movements.end_date = NOW()
+where balance_movements.card_id in ()
+      AND balance_movements.from_date >= '2020.11.26'
+      AND balance_movements.from_date <= '2020.12.25 23:59:59'
+      AND balance_movements.is_positive = 1;
+
+UPDATE cards
+SET cards.next_recalc = NOW()
+where cards.id in ();
+
+SELECT
+  cards.uid,
+  cards.next_recalc,
+  balance_movements.is_positive,
+  balance_movements.from_date,
+  balance_movements.end_date
+FROM cards
+  INNER JOIN balance_movements on cards.id = balance_movements.card_id
+WHERE cards.client_id = 625
+      AND cards.id in ()
+      AND balance_movements.from_date >= '2020.11.26'
+      AND balance_movements.from_date <= '2020.12.25 23:59:59'
+      AND balance_movements.is_positive = 1
+GROUP BY balance_movements.id;
+
+SELECT
+  cards.id,
+  cards.uid,
+  cards.balance,
+  goods_incomes.bonus_add
+FROM cards
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+  LEFT OUTER JOIN orders ON orders.card_id = cards.id
+  LEFT OUTER JOIN goods_incomes ON goods_incomes.order_id = orders.id
+WHERE cards.client_id = 625
+      AND cards.id in (123)
+      AND orders.`from` >= '2020.11.26'
+      AND orders.`from` <= '2020.12.25 23:59:59'
+      AND goods_incomes.bonus_add > 0
+GROUP BY orders.id;
+
+
+/*
+По приведенным ниже артикулам, необходимо выгрузить кол-во купленных чашек всего за период с 14.12-20.12
+
+017811
+017812
+017813
+017814
+015912
+016163
+016172
+016074
+021662
+
+
+Саша, по этим данным нужно выгрузить 51 неделю в понедельник.
+*/
+
+
+SELECT
+  good.article,
+  count(good.id)
+FROM cards
+  INNER JOIN (
+               SELECT
+                 orders.*,
+                 goods.article
+               FROM orders
+                 INNER JOIN goods_incomes ON orders.id = goods_incomes.order_id
+                 INNER JOIN goods ON goods.id = goods_incomes.goods_id
+               WHERE orders.client_id = 625
+                     AND orders.from >= '2020-12-21'
+                     AND orders.from <= '2020-12-27 23:59:59'
+                     AND goods.article IN (
+                 '017811',
+                 '017812',
+                 '017813',
+                 '008548',
+                 '003223',
+                 '017817',
+                 '024528',
+                 '025531',
+                 '022783',
+                 '020403',
+                 '013919',
+                 '013918'
+               )
+             ) AS good ON good.card_id = cards.id
+WHERE cards.client_id = 625
+GROUP BY good.article;
+
+
+select * from goods_categories
+where client_id = 625;
+
+
+/*
+Декорадо - 780
+*/
+
+SELECT * from goods_categories
+where goods_categories.client_id = 4;
+
+SELECT * from goods
+where goods.client_id = 780;
+
+select * from clients
+where id = 4;
+
+
+/*
+Необходимо выгрузить в таблицу excel клиентов, которые зарегистрировались с 7.10 -29.12:
+
+1) Регион (название группы магазинов)
+2) Магазин
+3)ФИО
+4)Номер телефона
+5) Дата регистрации.
+
+Регион можно посмотреть в структуре личного кабинета ( Отчеты-->Продажи-->Структура). Пример выгрузки во вложении
+*/
+
+SELECT
+  shops.name as shopName,
+  profiles.name,
+  profiles.phone,
+  shops.id as shopID,
+  hpc.created_at
+FROM cards
+  LEFT OUTER JOIN orders ON orders.card_id = cards.id
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+  INNER JOIN shops ON orders.shop_id = shops.id
+  LEFT OUTER JOIN (
+                    SELECT *
+                    FROM history_profiles_change
+                    WHERE client_id = 888
+                          AND is_creation = TRUE
+                  ) AS hpc ON hpc.profile_id = profiles.id
+WHERE cards.client_id = 888
+  and hpc.created_at >= '2020-10-07'
+  and hpc.created_at <= '2020-12-29 23:59:59'
+GROUP BY cards.id;
+
+
+select sale_general_report from reports_configurations
+where client_id = 888;
+
+
+select * from cards
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+
+/*
+Загрузить в список
+*/
+
+select profiles.id from cards
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+where cards.client_id = 625
+AND cards.uid in ();
+
+
+/*
+Яндекс 0 баланс - 1926
+*/
+select * from buyer_lists
+where buyer_lists.name = 'Яндекс 0 баланс';
+
+
+select * from cards
+where cards.uid = '221188221188';
+
+select * from balance_movements
+where card_id = 4778424;
+
+select
+  client_id,
+  name,
+  parent,
+  description,
+  uid,
+  is_activated,
+  parent_uid,
+  accumulation_rate
+from goods_categories
+where client_id = 780;
+
+SELECT *
+FROM cards
+WHERE cards.client_id = 888
+      AND cards.uid = '79171332415';
+
+/*
+Привязкать телефон к личному кабинету
+*
+
+select * from goods
+where goods.client_id = 1004;
+
+*/
+
+/*
+Декорадо 780
+ */
+
+SELECT *
+FROM goods
+WHERE goods.client_id = 780;
+
+SELECT *
+FROM goods_categories
+WHERE client_id = 780;
+
+/*3735*/
+
+SELECT *
+FROM bills
+WHERE id = 3735;
+
+UPDATE bills
+SET bills.exported = 1
+WHERE bills.id = 3735;
+
+
+/*
+У АЗС есть списки клиентов "Monopoly", "Monopoly2", 1ДТ_РОЗНИЦА".
+
+С 26.11 у данных клиентов наложились программы лояльности ( действовала и скидочная и бонусная система" .
+
+Вопрос: Можно у этих  клиентов с 26.11-25.12 списать все начисленные бонусы за этот период?
+*/
+
+/*
+1616
+1669
+1661
+*/
+
+SELECT *
+FROM buyer_lists
+WHERE client_id = 625
+      AND name = '1ДТ_РОЗНИЦА';
+
+SELECT buyers_list.buyers
+FROM buyers_list
+WHERE buyer_list_id = 1661;
+
+SELECT cards.id
+FROM cards
+  INNER JOIN profiles ON cards.id = profiles.card_id
+WHERE cards.client_id = 625
+      AND profile_id IN (123);
+
+
+UPDATE balance_movements
+SET balance_movements.end_date = NOW()
+where balance_movements.card_id in ()
+      AND balance_movements.from_date >= '2020.11.26'
+      AND balance_movements.from_date <= '2020.12.25 23:59:59'
+      AND balance_movements.is_positive = 1;
+
+UPDATE cards
+SET cards.next_recalc = NOW()
+where cards.id in ();
+
+SELECT
+  cards.uid,
+  cards.next_recalc,
+  balance_movements.is_positive,
+  balance_movements.from_date,
+  balance_movements.end_date
+FROM cards
+  INNER JOIN balance_movements on cards.id = balance_movements.card_id
+WHERE cards.client_id = 625
+      AND cards.id in ()
+      AND balance_movements.from_date >= '2020.11.26'
+      AND balance_movements.from_date <= '2020.12.25 23:59:59'
+      AND balance_movements.is_positive = 1
+GROUP BY balance_movements.id;
+
+SELECT
+  cards.id,
+  cards.uid,
+  cards.balance,
+  goods_incomes.bonus_add
+FROM cards
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+  LEFT OUTER JOIN orders ON orders.card_id = cards.id
+  LEFT OUTER JOIN goods_incomes ON goods_incomes.order_id = orders.id
+WHERE cards.client_id = 625
+      AND cards.id in (123)
+      AND orders.`from` >= '2020.11.26'
+      AND orders.`from` <= '2020.12.25 23:59:59'
+      AND goods_incomes.bonus_add > 0
+GROUP BY orders.id;
+
+
+/*
+По приведенным ниже артикулам, необходимо выгрузить кол-во купленных чашек всего за период с 14.12-20.12
+
+017811
+017812
+017813
+017814
+015912
+016163
+016172
+016074
+021662
+
+
+Саша, по этим данным нужно выгрузить 51 неделю в понедельник.
+*/
+
+
+SELECT
+  good.article,
+  count(good.id)
+FROM cards
+  INNER JOIN (
+               SELECT
+                 orders.*,
+                 goods.article
+               FROM orders
+                 INNER JOIN goods_incomes ON orders.id = goods_incomes.order_id
+                 INNER JOIN goods ON goods.id = goods_incomes.goods_id
+               WHERE orders.client_id = 625
+                     AND orders.from >= '2021-01-04'
+                     AND orders.from <= '2021-01-10 23:59:59'
+                     AND goods.article IN (
+                 '017811',
+                 '017812',
+                 '017813',
+                 '017814',
+                 '015912',
+                 '016163',
+                 '016172',
+                 '016074',
+                 '021662'
+               )
+             ) AS good ON good.card_id = cards.id
+WHERE cards.client_id = 625
+GROUP BY good.article;
+
+
+select * from goods_categories
+where client_id = 625;
+
+
+/*
+Декорадо - 780
+*/
+
+SELECT * from goods_categories
+where goods_categories.client_id = 4;
+
+SELECT * from goods
+where goods.client_id = 780;
+
+select * from clients
+where id = 4;
+
+
+/*
+Необходимо выгрузить в таблицу excel клиентов, которые зарегистрировались с 7.10 -29.12:
+
+1) Регион (название группы магазинов)
+2) Магазин
+3)ФИО
+4)Номер телефона
+5) Дата регистрации.
+
+Регион можно посмотреть в структуре личного кабинета ( Отчеты-->Продажи-->Структура). Пример выгрузки во вложении
+*/
+
+SELECT
+  shops.name as shopName,
+  profiles.name,
+  profiles.phone,
+  shops.id as shopID,
+  hpc.created_at
+FROM cards
+  LEFT OUTER JOIN orders ON orders.card_id = cards.id
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+  INNER JOIN shops ON orders.shop_id = shops.id
+  LEFT OUTER JOIN (
+                    SELECT *
+                    FROM history_profiles_change
+                    WHERE client_id = 888
+                          AND is_creation = TRUE
+                  ) AS hpc ON hpc.profile_id = profiles.id
+WHERE cards.client_id = 888
+  and hpc.created_at >= '2020-10-07'
+  and hpc.created_at <= '2020-12-29 23:59:59'
+GROUP BY cards.id;
+
+
+select sale_general_report from reports_configurations
+where client_id = 888;
+
+
+select * from cards
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+
+
+
+/*
+Загрузить в список
+*/
+
+select profiles.id from cards
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+where cards.client_id = 625
+AND cards.uid in ();
+
+
+/*
+Яндекс 0 баланс - 1926
+*/
+select * from buyer_lists
+where buyer_lists.name = 'Яндекс 0 баланс';
+
+
+select * from cards
+where cards.uid = '221188221188';
+
+select * from balance_movements
+where card_id = 4778424;
+
+select
+  *
+from goods_categories
+where client_id = 780;
+
+SELECT * from bills
+where id = 3742;
+
+update bills
+set bills.exported = 1
+where id = 3752;
+
+
+/*
+Необходимо по этим спискам клиентов: ГРУППА Кофейники 496979 и ГРУППА ХОТдог за 88 проверить покупали ли клиенты следующий товары за определенный период:( списки можно совместить)
+
+52 неделя  - 28.12 - 03.01
+53 неделя - 04.01-10.01
+
+
+Файл с артикулами во вложении
+*/
+
+/*
+ГРУППА Кофейники 496979 - 1920
+ГРУППА ХОТдог за 88 - 1918
+*/
+SELECT * from buyer_lists
+WHERE client_id = 625
+and name = 'ГРУППА ХОТдог за 88';
+
+SELECT buyers from buyers_list
+where buyers_list.buyer_list_id = 1920;
+
+select id from cards
+where cards.profile_id in ()
+
+SELECT
+  good.article,
+  count(good.id)
+FROM cards
+  INNER JOIN (
+               SELECT
+                 orders.*,
+                 goods.article
+               FROM orders
+                 INNER JOIN goods_incomes ON orders.id = goods_incomes.order_id
+                 INNER JOIN goods ON goods.id = goods_incomes.goods_id
+               WHERE orders.client_id = 625
+                     AND orders.from >= '2021-01-04'
+                     AND orders.from <= '2021-01-10 23:59:59'
+                     AND goods.article IN (
+                 '017811',
+                 '017812',
+                 '017813',
+                 '008548',
+                 '003223',
+                 '017817',
+                 '024528',
+                 '025531',
+                 '022783',
+                 '020403',
+                 '013919',
+                 '013918'
+               )
+             ) AS good ON good.card_id = cards.id
+WHERE cards.client_id = 625
+  AND cards.id in ()
+GROUP BY good.article;
+
+
+
+select *
+from goods_categories
+where client_id = 780;
+
+SELECT * from goods_categories
+where client_id = 780
+      and name = 'ДВП';
+
+
+SELECT * from goods_categories
+where client_id = 780
+      and uid = 'e5d4a65b-94eb-11e1-94b5-2c27d73a4ac6';
+
+SELECT * from goods_categories
+where client_id = 780
+      and id = 771819;
+
+
+
