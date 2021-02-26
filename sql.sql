@@ -1342,4 +1342,26 @@ WHERE client_id = 625
 
 
 
+/*Люди зарегистрировались вчера и у них не указан пол*/
 
+SELECT
+  cards.uid,
+  shops.name AS shopName,
+  users.name AS userName,
+  profiles.name,
+  profiles.phone,
+  hpc.created_at
+FROM cards
+  INNER JOIN profiles ON profiles.id = cards.profile_id
+  LEFT OUTER JOIN (
+                    SELECT *
+                    FROM history_profiles_change
+                    WHERE client_id = 888
+                          AND is_creation = TRUE
+                  ) AS hpc ON hpc.profile_id = profiles.id
+  LEFT OUTER JOIN shops ON shops.id = hpc.shop_id
+  LEFT OUTER JOIN users ON users.id = hpc.user_id
+WHERE cards.client_id = 888
+      and hpc.created_at >= '2021-02-25 00:00:00'
+      and hpc.created_at <= '2021-02-25 23:59:59'
+GROUP BY cards.uid;
